@@ -68,38 +68,110 @@ Vagrant.configure("2") do |config|
   # Ansible, Chef, Docker, Puppet and Salt are also available. Please see the
   # documentation for more information about their specific syntax and use.
 config.vm.provision "shell", inline: <<-SHELL
-    export DEBIAN_FRONTEND=noninteractive
+  export DEBIAN_FRONTEND=noninteractive
 
-    # 1. Install Zsh, Git, curl, and fonts
-    apt-get update
-    apt-get install -y zsh git curl fonts-powerline
+  # ============================================================
+  # 1. Install required packages
+  # ============================================================
+  apt-get update
+  apt-get install -y zsh git curl fonts-powerline
 
-    # 2. Define global Oh My Zsh installation directory
-    export ZSH="/usr/local/share/oh-my-zsh"
-    [ -d "$ZSH" ] || git clone https://github.com/ohmyzsh/ohmyzsh.git $ZSH
+  # ============================================================
+  # 2. Install Oh My Zsh globally
+  # ============================================================
+  export ZSH="/usr/local/share/oh-my-zsh"
 
-    # 3. Install Plugins and Theme Globally
-    ZSH_CUSTOM="$ZSH/custom"
-    [ -d "$ZSH_CUSTOM/plugins/zsh-autosuggestions" ] || git clone https://github.com/zsh-users/zsh-autosuggestions $ZSH_CUSTOM/plugins/zsh-autosuggestions
-    [ -d "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting" ] || git clone https://github.com/zsh-users/zsh-syntax-highlighting.git $ZSH_CUSTOM/plugins/zsh-syntax-highlighting
-    [ -d "$ZSH_CUSTOM/themes/powerlevel10k" ] || git clone --depth=1 https://github.com/romkatv/powerlevel10k.git $ZSH_CUSTOM/themes/powerlevel10k
+  if [ ! -d "$ZSH" ]; then
+    git clone https://github.com/ohmyzsh/ohmyzsh.git "$ZSH"
+  fi
 
-    # 4. Change default shell for any new system user to Zsh automatically
-    sed -i 's#SHELL=/bin/bash#SHELL=/usr/bin/zsh#' /etc/default/useradd
+  # ============================================================
+  # 3. Install plugins globally
+  # ============================================================
+  ZSH_CUSTOM="$ZSH/custom"
 
-    # 5. Populate /etc/skel so future users automatically get .zshrc and skip the wizard
-    cat << 'EOF' > /etc/skel/.zshrc
+  if [ ! -d "$ZSH_CUSTOM/plugins/zsh-autosuggestions" ]; then
+    git clone \
+      https://github.com/zsh-users/zsh-autosuggestions \
+      "$ZSH_CUSTOM/plugins/zsh-autosuggestions"
+  fi
+
+  if [ ! -d "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting" ]; then
+    git clone \
+      https://github.com/zsh-users/zsh-syntax-highlighting.git \
+      "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting"
+  fi
+
+  # ============================================================
+  # 4. Install Powerlevel10k globally
+  # ============================================================
+  if [ ! -d "$ZSH_CUSTOM/themes/powerlevel10k" ]; then
+    git clone --depth=1 \
+      https://github.com/romkatv/powerlevel10k.git \
+      "$ZSH_CUSTOM/themes/powerlevel10k"
+  fi
+
+  # ============================================================
+  # 5. Create global Powerlevel10k config
+  # ============================================================
+  #
+  # IMPORTANT:
+  # This copies vagrant's .p10k.zsh to /etc/p10k.zsh
+  # if it exists.
+  #
+  if [ -f /home/vagrant/.p10k.zsh ]; then
+    cp /home/vagrant/.p10k.zsh /etc/p10k.zsh
+    chown root:root /etc/p10k.zsh
+    chmod 644 /etc/p10k.zsh
+  fi
+
+  # ============================================================
+  # 6. Global Zsh config template for new users
+  # ============================================================
+  cat > /etc/skel/.zshrc <<'EOF'
 export ZSH="/usr/local/share/oh-my-zsh"
+
 ZSH_THEME="powerlevel10k/powerlevel10k"
-plugins=(git zsh-autosuggestions zsh-syntax-highlighting)
+
+plugins=(
+  git
+  zsh-autosuggestions
+  zsh-syntax-highlighting
+)
+
 POWERLEVEL9K_DISABLE_CONFIGURATION_WIZARD=true
 
-source $ZSH/oh-my-zsh.sh
+source "$ZSH/oh-my-zsh.sh"
+
+# Global Powerlevel10k config
+[[ -f /etc/p10k.zsh ]] && source /etc/p10k.zsh
 EOF
 
-    # 6. Apply changes immediately to the existing 'vagrant' user
-    chsh -s /usr/bin/zsh vagrant
-    cp /etc/skel/.zshrc /home/vagrant/.zshrc
-    chown vagrant:vagrant /home/vagrant/.zshrc
-  SHELL
-end
+  # ============================================================
+  # 7. Make Zsh default shell for future users
+  # ============================================================
+  sed -i 's#SHELL=/bin/bash#SHELL=/usr/bin/zsh#' /etc/default/useradd
+
+  # ============================================================
+  # 8. Configure all existing normal users in /home
+  # ============================================================
+  for user_home in /home/*; do
+    [ -d "$user_home" ] || continue
+
+    username=$(basename "$user_home")
+
+    # Make sure the Linux user actually exists
+    id "$username" >/dev/null 2>&1 || continue
+
+    # Set Zsh as default shell
+    chsh -s /usr/bin/zsh "$username"
+
+    # Apply common Zsh config
+    cp /etc/skel/.zshrc "$user_home/.zshrc"
+
+    # Fix owner/group
+    chown "$username:$username" "$user_home/.zshrc"
+  done
+
+SHELL
+  end

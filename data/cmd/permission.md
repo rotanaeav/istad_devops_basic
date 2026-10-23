@@ -26,3 +26,13 @@ sudo chown :groupname filename # for only group
 sudo chgrp groupname filename # for only group
 sudo chown -r # for directory need to use recursive for apply whole folder
 ```
+### Sudo
+#### password config : 
+```bash
+sudo visudo # cmd to edit or config user and group password
+# username for all terminal, run as all user,as all group, without password :
+username ALL=(ALL:ALL) NOPASSED:ALL​ # write this into the end of the visudo to make user not require passwd
+username ALL=(root) NOPASSWD:/bin/cp # only can run cp (copy) as root user without password
+```
+
+

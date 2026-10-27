@@ -12,5 +12,8 @@ docker logs nginx | grep "words"
 ```
 ## edit file
 ```bash
+sed 's/"8080:80"/"9090:80/' filename # find the exactly same pattern and replace it ; find 8080:80 then replace to 9090:80 but it just preview on output not change file yet ;
+sed -i 's/"8080:80"/"9090:80/' filename # will change the file ;
 
+yq -i '.app.version = "1.3.0"' config.yml # edit in place with yq (yq is best for yaml)
 ```

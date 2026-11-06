@@ -1,0 +1,21 @@
+services:
+  postgres-svc:
+    container_name: postgres-cont
+    image: postgres:latest
+    ports:
+      - "5432:5432"
+    secrets:
+     - dbpassword
+    environment:
+      # - POSTGRES_PASSWORD=${DB_PWD:? Password is Required!} 
+      # using secrets file instead for hide from portainer
+      - POSTGRES_PASSWORD_FILE=/run/secrets/dbpassword
+      - POSTGRES_DB=${DB:-default} 
+      - POSTGRES_USER=${DB_USER}
+    volumes:
+      - postgres-demo-vol:/var/lib/postgressql
+volumes:
+  postgres-demo-vol:
+secrets:
+  dbpassword:
+    file: ./secrets/dbpass.txt

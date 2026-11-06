@@ -1,0 +1,37 @@
+volumes:
+  wordpress-vol:
+  mysql-vol:
+networks:
+  wordpress-net:
+services:
+  wordpress-svc:
+    container_name: wordpress-cont
+    image: wordpress
+    networks:
+      - wordpress-net
+    ports:
+      - 3005:80
+    depends_on:
+      - mysql-svc
+    environment:
+      - WORDPRESS_DB_HOST=mysql-svc
+      - WORDPRESS_DB_USER=${DB_USER}
+      - WORDPRESS_DB_PASSWORD=${DB_PWD}
+      - WORDPRESS_DB_NAME=${DB_DATABASE}
+    volumes:
+      - wordpress-vol:/var/www/html
+
+  mysql-svc:
+    container_name: mysql-cont
+    image: mysql
+    networks:
+      - wordpress-net
+    ports:
+      - 3306:3306
+    environment:
+      - MYSQL_USER=${DB_USER}
+      - MYSQL_DATABASE=${DB_DATABASE}
+      - MYSQL_PASSWORD=${DB_PWD}
+      - MYSQL_ROOT_PASSWORD=${DB_PWD}
+    volumes:
+      - mysql-vol:/var/lib/mysql

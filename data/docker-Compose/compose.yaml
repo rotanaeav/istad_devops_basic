@@ -1,0 +1,26 @@
+#volum : 
+volumes:
+  mydatabase-vol:
+services:
+  cont1:
+    container_name: nginx1
+    image: nginx
+    ports:
+      - 3001:80
+  cont2:
+    container_name: postgres-cont
+    image: postgres:latest
+    environment:
+      - POSTGRES_PASSWORD=9903
+      - POSTGRES_USER= postgres
+      - POSTGRES_DATABASE= postgres
+    ports:
+      - 5432:5432
+    volumes:
+      - mydatabase-vol:/var/lib/postgresql
+
+  cont3:
+    container_name: nginx-cont
+    image: nginx
+    ports:
+      - 3002:80

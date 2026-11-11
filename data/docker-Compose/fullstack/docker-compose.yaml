@@ -1,0 +1,46 @@
+services:
+  frontend:
+    build:
+    # build directive : use Dockerfile to build img first
+      context: frontend
+      #dockerfile: . # meaning the same to Dockerfile becuase it is know automaticlly or no need to put it
+    # missing is the default : if local not has it will pull from docker , never : not pull from outside repo ,...
+    pull_policy: build # to always re-build when run : becuase docker only build only one time if it has image ;
+    image: react-image:latest
+    container_name: frontend-cont
+    networks:
+      - fullstack-net
+    ports:
+      - 3000:80
+  backend:
+    build:
+      context: backend
+      dockerfile: dev.Dockerfile
+    pull_policy: build
+    container_name: backend-cont
+    image: backend-image
+    depends_on:
+      - database
+    networks:
+      - fullstack-net
+  database:
+    image: postgres
+    container_name: postgres-cont
+    volumes:
+      - database-vol:/var/lib/postgresql
+    networks:
+      - fullstack-net
+    environment:
+      # - POSTGRES_PASSWORD=${DB_PWD}
+      POSTGRES_PASSWORD: 9903
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  database-vol:
+networks:
+  fullstack-net:
